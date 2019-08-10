@@ -30,7 +30,9 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [
+              "src/libraries/face-api.min.js"
+            ]
           },
           "configurations": {
             "production": {
