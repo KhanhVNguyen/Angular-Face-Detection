@@ -31,7 +31,8 @@
               "src/styles.scss"
             ],
             "scripts": [
-              "src/libraries/face-api.min.js"
+              "src/libraries/face-api.min.js",
+              "src/libraries/face-api.js"
             ]
           },
           "configurations": {
