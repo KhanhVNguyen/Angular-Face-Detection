@@ -25,9 +25,9 @@ export class AppComponent implements AfterViewInit, OnInit {
       faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL)
     ]).then(() => this.startVideo())
   }
-  
+
   ngOnInit() {
-    
+
     // this.loadVideoModel();
   }
 
@@ -79,23 +79,26 @@ export class AppComponent implements AfterViewInit, OnInit {
 
   onplay() {
     setTimeout(async () => {
-      const canvas = faceapi.createCanvasFromMedia(this.video)
-      document.body.append(canvas)
-      const displaySize = { width: this.video.width, height: this.video.height }
-      faceapi.matchDimensions(canvas, displaySize);
-      const labeledFaceDescriptors = await this.loadLabeledImages()
-      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6)
-      setInterval(async () => {
 
-        console.log('detecting')
-        let detections = await faceapi.detectAllFaces(this.videoElement.nativeElement).withFaceLandmarks().withFaceDescriptors()
+      const labeledFaceDescriptors = await this.loadLabeledImages();
+      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6);
+      let canvas;
+      setInterval(async () => {
+        // if(canvas) canvas.remove()
+        if (!canvas) canvas = faceapi.createCanvasFromMedia(this.video);
+        document.body.append(canvas);
+        const displaySize = { width: this.video.width, height: this.video.height };
+        faceapi.matchDimensions(canvas, displaySize);
+        let detections = await faceapi.detectAllFaces(this.video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors().withFaceExpressions()
+        // console.log(detections)
         const resizedDetections = faceapi.resizeResults(detections, displaySize);
         const results = resizedDetections.map(d => faceMatcher.findBestMatch(d.descriptor));
-        if (canvas) canvas.remove()
 
         results.forEach((result, i) => {
           const box = resizedDetections[i].detection.box
           const drawBox = new faceapi.draw.DrawBox(box, { label: result.toString() })
+          console.log(drawBox);
+
           drawBox.draw(canvas)
         })
 
@@ -104,7 +107,7 @@ export class AppComponent implements AfterViewInit, OnInit {
         // faceapi.draw.drawFaceLandmarks(canvas, resizedDetections)
         // faceapi.draw.drawFaceExpressions(canvas, resizedDetections)
       }, 100)
-    }, 4000)
+    }, 3000)
   }
 
   @HostListener('change')
@@ -132,13 +135,13 @@ export class AppComponent implements AfterViewInit, OnInit {
       results.forEach((result, i) => {
         const box = resizedDetections[i].detection.box
         const drawBox = new faceapi.draw.DrawBox(box, { label: result.toString() })
-        drawBox.draw(canvas)
+        if (!canvas) drawBox.draw(canvas)
       })
     }, 100)
   }
 
   loadLabeledImages() {
-    const labels = ['Black Widow', 'Captain America', 'Captain Marvel', 'Hawkeye', 'Jim Rhodes', 'Thor', 'Tony Stark', 'Khanh']
+    const labels = ['Khanh', 'Khoi']
     return Promise.all(
       labels.map(async label => {
         const descriptions = []
