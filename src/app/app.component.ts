@@ -14,18 +14,21 @@ export class AppComponent implements AfterViewInit, OnInit {
   video: any;
 
   constructor() {
-    // const MODEL = '/assets/vid_models';
-    // Promise.all([
-    //   faceapi.nets.tinyFaceDetector.loadFromUri(MODEL),
-    //   faceapi.nets.faceLandmark68Net.loadFromUri(MODEL),
-    //   faceapi.nets.faceRecognitionNet.loadFromUri(MODEL),
-    //   faceapi.nets.faceExpressionNet.loadFromUri(MODEL)
-    // ])
+    const MODEL = '/assets/models';
+    Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL),
+      faceapi.nets.faceExpressionNet.loadFromUri(MODEL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL),
+      faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL)
+    ]).then(() => this.startVideo())
   }
-
+  
   ngOnInit() {
-    this.loadVideoModel();
-
+    
+    // this.loadVideoModel();
   }
 
   loadVideoModel() {
@@ -75,22 +78,33 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   onplay() {
-    setTimeout(() => {
+    setTimeout(async () => {
       const canvas = faceapi.createCanvasFromMedia(this.video)
       document.body.append(canvas)
       const displaySize = { width: this.video.width, height: this.video.height }
-      faceapi.matchDimensions(canvas, displaySize)
+      faceapi.matchDimensions(canvas, displaySize);
+      const labeledFaceDescriptors = await this.loadLabeledImages()
+      const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors, 0.6)
       setInterval(async () => {
+
         console.log('detecting')
-        let detections = await faceapi.detectAllFaces(this.videoElement.nativeElement, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions()
-        console.log(detections);
-        const resizedDetections = faceapi.resizeResults(detections, displaySize)
-        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
-        faceapi.draw.drawDetections(canvas, resizedDetections)
-        faceapi.draw.drawFaceLandmarks(canvas, resizedDetections)
-        faceapi.draw.drawFaceExpressions(canvas, resizedDetections)
+        let detections = await faceapi.detectAllFaces(this.videoElement.nativeElement).withFaceLandmarks().withFaceDescriptors()
+        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+        const results = resizedDetections.map(d => faceMatcher.findBestMatch(d.descriptor));
+        if (canvas) canvas.remove()
+
+        results.forEach((result, i) => {
+          const box = resizedDetections[i].detection.box
+          const drawBox = new faceapi.draw.DrawBox(box, { label: result.toString() })
+          drawBox.draw(canvas)
+        })
+
+        // canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+        // faceapi.draw.drawDetections(canvas, resizedDetections)
+        // faceapi.draw.drawFaceLandmarks(canvas, resizedDetections)
+        // faceapi.draw.drawFaceExpressions(canvas, resizedDetections)
       }, 100)
-    }, 3000)
+    }, 4000)
   }
 
   @HostListener('change')
@@ -124,12 +138,12 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   loadLabeledImages() {
-    const labels = ['Black Widow', 'Captain America', 'Captain Marvel', 'Hawkeye', 'Jim Rhodes', 'Thor', 'Tony Stark']
+    const labels = ['Black Widow', 'Captain America', 'Captain Marvel', 'Hawkeye', 'Jim Rhodes', 'Thor', 'Tony Stark', 'Khanh']
     return Promise.all(
       labels.map(async label => {
         const descriptions = []
         for (let i = 1; i <= 2; i++) {
-          const img = await faceapi.fetchImage(`https://raw.githubusercontent.com/WebDevSimplified/Face-Recognition-JavaScript/master/labeled_images/${label}/${i}.jpg`)
+          const img = await faceapi.fetchImage(`https://raw.githubusercontent.com/Necrophos/Angular-Face-Detection/master/src/assets/labeled_images/${label}/${i}.jpg`)
           const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
           descriptions.push(detections.descriptor)
         }
