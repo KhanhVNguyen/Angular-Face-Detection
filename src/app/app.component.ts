@@ -140,11 +140,11 @@ export class AppComponent implements AfterViewInit, OnInit {
   }
 
   loadLabeledImages() {
-    const labels = ['Khanh', 'Khoi']
+    const labels = ['Khanh']
     return Promise.all(
       labels.map(async label => {
         const descriptions = []
-        for (let i = 1; i <= 2; i++) {
+        for (let i = 1; i <= 16; i++) {
           const img = await faceapi.fetchImage(`https://raw.githubusercontent.com/Necrophos/Angular-Face-Detection/master/src/assets/labeled_images/${label}/${i}.jpg`)
           const detections = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor()
           descriptions.push(detections.descriptor)
